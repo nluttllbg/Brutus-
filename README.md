@@ -4,33 +4,37 @@ Website institucional da Barbearia Brutus Barbershop, desenvolvido com React, Vi
 
 ---
 
-## Motivo da Tela Branca ao Subir para o GitHub (e Como Foi Corrigido)
+## Soluções Aplicadas para o GitHub e GitHub Actions
 
-Se ao publicar o repositório no GitHub o site apresentou uma tela branca vazia (*blank screen*), as duas causas fundamentais identificadas foram:
+### 1. Correção do erro no GitHub Actions (`Dependencies lock file is not found`)
+- **Causa**: O passo `actions/setup-node@v4` estava configurado com `cache: 'npm'`, o qual exige a presença obrigatória do arquivo `package-lock.json`. Como o arquivo de lock não estava gerado nem incluído no repositório, o GitHub Actions abortava com o erro:
+  `Error: Dependencies lock file is not found in /home/runner/work/...`
+- **Conflito de dependências resolvido**: No `package.json`, havia uma declaração antiga de `"esbuild": "^0.25.0"` em devDependencies que conflitava com a versão mais recente exigida pelo Vite 8 (`^0.27.0 || ^0.28.0`). Esse conflito impedia o `npm` de gerar o arquivo de lock de forma limpa.
+- **Solução implementada**:
+  1. Removemos a dependência conflitante redundante de `esbuild` do `package.json` (o Vite já gerencia sua própria versão do esbuild internamente).
+  2. Geramos um `package-lock.json` íntegro e consistente com todas as dependências do projeto.
+  3. No workflow `.github/workflows/deploy.yml`, definimos explicitamente `cache-dependency-path: 'package-lock.json'` e atualizamos o comando de instalação para `npm ci`, garantindo builds rápidos, seguros e determinísticos na esteira de CI.
 
-1. **Caminho absoluto padrão de assets no Vite (`base: '/'` vs `base: './'`)**:
-   - Por padrão, o Vite gera referências aos arquivos JavaScript e CSS como caminhos absolutos na raiz do domínio (`/assets/index-...js`).
-   - Quando hospedado no **GitHub Pages**, o endereço do projeto fica em um subdiretório (ex: `https://seu-usuario.github.io/nome-do-repositorio/`).
-   - Com o caminho absoluto, o navegador tentava carregar os arquivos em `https://seu-usuario.github.io/assets/...`, gerando **Erro 404 (Not Found)**. Sem carregar o script JavaScript, o React não iniciava e a página ficava totalmente branca.
-   - **Correção aplicada**: Adicionamos `base: './'` em `vite.config.ts`. Dessa forma, todos os assets compilados utilizam caminhos relativos (`./assets/...`), funcionando perfeitamente em qualquer repositório, subpasta ou domínio personalizado.
-
-2. **Publicação dos arquivos fonte sem compilação prévia**:
-   - Se o GitHub Pages for configurado para servir a branch `main` diretamente na pasta `/` (raiz), ele entrega o `index.html` original de desenvolvimento, o qual referencia `<script src="/src/main.tsx"></script>`.
-   - Navegadores de internet não executam arquivos TypeScript (`.tsx`) puros sem que eles passem pelo build do Vite. Isso gera um erro de tipo MIME/módulo no console e impede a renderização.
-   - **Correção aplicada**: Criamos o fluxo automatizado do GitHub Actions em `.github/workflows/deploy.yml`, que instala as dependências, executa `npm run build` e publica a pasta compilada `dist/`.
+### 2. Correção da tela branca (*blank screen*)
+- **Causa**: O caminho padrão absoluto do Vite (`/assets/...`) causava erro 404 em URLs de subdiretório do GitHub Pages (`https://usuario.github.io/repositorio/`).
+- **Solução**: Definido `base: './'` em `vite.config.ts`, tornando todas as referências a scripts e estilos relativas.
 
 ---
 
 ## Como Ativar a Publicação no GitHub Pages (Passo a Passo)
 
-Para que seu site funcione automaticamente no GitHub Pages:
-
-1. Acesse o seu repositório no GitHub.
-2. Clique na aba **Settings** (Configurações) no topo.
-3. No menu lateral esquerdo, clique em **Pages**.
-4. Em **Build and deployment** > **Source**, selecione a opção:
-   - **GitHub Actions** *(Recomendado - nosso arquivo `.github/workflows/deploy.yml` já está pronto)*.
-5. Pronto! A cada novo `git push` para a branch `main` ou `master`, o GitHub compilará o projeto e publicará o site com URL pública ativa.
+1. Envie todas as alterações para o seu repositório no GitHub (incluindo o arquivo `package-lock.json` e a pasta `.github/`):
+   ```bash
+   git add .
+   git commit -m "Correção do deploy e inclusão do package-lock.json"
+   git push origin main
+   ```
+2. Acesse o seu repositório no GitHub pelo navegador.
+3. Clique na aba **Settings** (Configurações) no menu superior.
+4. No menu lateral esquerdo, clique em **Pages**.
+5. Em **Build and deployment** > **Source**, certifique-se de que está selecionado:
+   - **GitHub Actions**.
+6. Pronto! A aba **Actions** executará a esteira com sucesso e fornecerá o link ativo da barbearia.
 
 ---
 
@@ -39,7 +43,7 @@ Para que seu site funcione automaticamente no GitHub Pages:
 - **`npm run dev`**: Inicia o servidor local de desenvolvimento na porta 3000.
 - **`npm run build`**: Gera a versão otimizada para produção na pasta `dist/`.
 - **`npm run preview`**: Visualiza localmente a versão compilada em `dist/`.
-- **`npm run lint`**: Verifica a tipagem estrita com TypeScript.
+- **`npm run lint`**: Verifica a integridade dos tipos TypeScript.
 
 ---
 
