@@ -1,0 +1,6 @@
+{
+  "name": "Barbearia - Brutus Barbershop",
+  "description": "Website oficial da Barbearia Brutus Barbershop. Corte de cabelo, barba, ambiente exclusivo com lounge Chesterfield e agendamento direto pelo WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
